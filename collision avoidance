@@ -1,0 +1,63 @@
+pip install numpy pandas opencv-python tensorflow flask
+
+import numpy as np
+
+def get_sensor_data():
+    # Simulate sensor data: [distance_to_obstacle, speed_of_vehicle]
+    distance_to_obstacle = np.random.uniform(0, 50)  # Distance in meters
+    speed_of_vehicle = np.random.uniform(0, 100)  # Speed in km/h
+    return distance_to_obstacle, speed_of_vehicle
+
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+
+# Sample dataset creation (for demonstration purposes)
+def create_dataset():
+    # Generate synthetic data: [distance_to_obstacle, speed_of_vehicle] -> [risk_level]
+    X = np.random.rand(1000, 2) * np.array([[50], [100]])  # Random distances and speeds
+    y = (X[:, 0] < 10).astype(int)  # Risk level: 1 if distance < 10m else 0
+    return train_test_split(X, y, test_size=0.2)
+
+# Build a simple neural network model
+def build_model():
+    model = tf.keras.Sequential([
+        tf.keras.layers.Dense(10, activation='relu', input_shape=(2,)),
+        tf.keras.layers.Dense(1, activation='sigmoid')
+    ])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+# Train the model
+X_train, X_test, y_train, y_test = create_dataset()
+model = build_model()
+model.fit(X_train, y_train, epochs=10)
+
+def assess_risk_and_avoid_collision(distance_to_obstacle, speed_of_vehicle):
+    input_data = np.array([[distance_to_obstacle, speed_of_vehicle]])
+    risk_level = model.predict(input_data)[0][0]
+
+    if risk_level > 0.5:  # If risk is high
+        print("Warning: Collision imminent! Taking evasive action.")
+        # Implement collision avoidance logic (e.g., brake or steer)
+        return "Collision Avoidance Activated"
+    else:
+        print("All clear. Continue driving.")
+        return "No Action Needed"
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/check_safety', methods=['GET'])
+def check_safety():
+    distance_to_obstacle, speed_of_vehicle = get_sensor_data()
+    action = assess_risk_and_avoid_collision(distance_to_obstacle, speed_of_vehicle)
+    
+    return jsonify({
+        'distance_to_obstacle': distance_to_obstacle,
+        'speed_of_vehicle': speed_of_vehicle,
+        'action': action
+    })
+
+if __name__ == '__main__':
+    app.run(debug=True)
